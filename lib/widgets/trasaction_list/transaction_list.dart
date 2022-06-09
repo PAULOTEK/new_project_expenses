@@ -5,7 +5,7 @@ import '../../model/transaction.model.dart';
 
 class TransactionList extends StatelessWidget {
   final List<TransactionModel> transactions;
-  final void Function(String) onRemove;
+  final Function(String) onRemove;
 
   const TransactionList({Key? key, required this.transactions, required this.onRemove})
       : super(key: key);
@@ -13,23 +13,28 @@ class TransactionList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return transactions.isEmpty
-        ? Column(
-            children: [
-              Text(
-                'Nenhuma Trasação Cadastrada!',
-                style: Theme.of(context).textTheme.headline6,
-              ),
-              const SizedBox(
-                height: 20,
-              ),
-              SizedBox(
-                height: 200,
-                child: Image.asset(
-                  'assets/images/waiting.png',
-                  fit: BoxFit.cover,
+        ? LayoutBuilder(
+            builder: (BuildContext context, BoxConstraints constraints) => Column(
+              children: [
+                const SizedBox(
+                  height: 20,
                 ),
-              ),
-            ],
+                Text(
+                  'Nenhuma Trasação Cadastrada!',
+                  style: Theme.of(context).textTheme.headline6,
+                ),
+                const SizedBox(
+                  height: 20,
+                ),
+                SizedBox(
+                  height: constraints.maxHeight * 0.6,
+                  child: Image.asset(
+                    'assets/images/waiting.png',
+                    fit: BoxFit.cover,
+                  ),
+                ),
+              ],
+            ),
           )
         : ListView.builder(
             itemCount: transactions.length,
@@ -58,11 +63,17 @@ class TransactionList extends StatelessWidget {
                       (tr.date),
                     ),
                   ),
-                  trailing: IconButton(
-                    icon: const Icon(Icons.delete),
-                    color: Theme.of(context).errorColor,
-                    onPressed: () => onRemove(tr.id),
-                  ),
+                  trailing: MediaQuery.of(context).size.width > 400
+                      ? TextButton.icon(
+                          onPressed: () => onRemove(tr.id),
+                          icon: const Icon(Icons.delete),
+                          label: const Text("Excluir"),
+                        )
+                      : IconButton(
+                          icon: const Icon(Icons.delete),
+                          color: Theme.of(context).errorColor,
+                          onPressed: () => onRemove(tr.id),
+                        ),
                 ),
               );
             },

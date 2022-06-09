@@ -1,5 +1,7 @@
+import 'dart:io';
 import 'dart:math';
 
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../model/transaction.model.dart';
@@ -17,42 +19,80 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  bool _showChar = false;
+
   @override
   Widget build(BuildContext context) {
-    final appBar = AppBar(
-      title: const Text(
-        'Despesas Pessoais',
-      ),
-      actions: <Widget>[
-        IconButton(
-          icon: const Icon(Icons.add),
-          onPressed: () => _openTransactionFormModal(context),
+    bool isLandScape = MediaQuery.of(context).orientation == Orientation.landscape;
+    final actions = <Widget>[
+      if (isLandScape)
+        _getIconButtom(
+          _showChar ? Icons.list : Icons.pie_chart,
+          () => setState(
+            () {
+              _showChar = !_showChar;
+            },
+          ),
         ),
-      ],
-    );
+      _getIconButtom(
+        Platform.isIOS ? CupertinoIcons.add : Icons.add,
+        _openTransactionFormModal(context),
+      ),
+    ];
+    final PreferredSizeWidget? appBar = (Platform.isIOS
+        ? CupertinoNavigationBar(
+            middle: const Text('Despesas Pessoais'),
+            trailing: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                actions.first,
+              ],
+            ),
+          )
+        : AppBar(
+            title: const Text(
+              'Despesas Pessoais',
+            ),
+            actions: actions)) as PreferredSizeWidget?;
     final availableHeight = MediaQuery.of(context).size.height -
         appBar.preferredSize.height -
         MediaQuery.of(context).padding.top;
-    return Scaffold(
-      appBar: appBar,
-      body: SingleChildScrollView(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            SizedBox(height: availableHeight * 0.3, child: ChartWidget(_recentTransactions)),
+
+    final pageBody = SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (_showChar || !isLandScape)
             SizedBox(
-                height: availableHeight * 0.7,
-                child: TransactionList(
-                    transactions: _transactions, onRemove: (string) async => _removeTransaction)),
-          ],
-        ),
+              height: availableHeight * (isLandScape ? 0.7 : 0.3),
+              child: ChartWidget(_recentTransactions),
+            ),
+          if (!_showChar || !isLandScape)
+            SizedBox(
+              height: availableHeight * (isLandScape ? 1 : 0.7),
+              child: TransactionList(
+                  transactions: _transactions, onRemove: (string) async => _removeTransaction),
+            ),
+        ],
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _openTransactionFormModal(context),
-        child: const Icon(Icons.add),
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
     );
+
+    return Platform.isIOS
+        ? CupertinoPageScaffold(
+            navigationBar: appBar,
+            child: pageBody,
+          )
+        : Scaffold(
+            appBar: appBar,
+            body: pageBody,
+            floatingActionButton: Platform.isIOS
+                ? const SizedBox()
+                : FloatingActionButton(
+                    onPressed: () => _openTransactionFormModal(context),
+                    child: const Icon(Icons.add),
+                  ),
+            floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+          );
   }
 
   final _transactions = [
@@ -106,5 +146,20 @@ class _MyHomePageState extends State<MyHomePage> {
         return TransactionForm(_addTransaction);
       },
     );
+  }
+
+  Widget _getIconButtom(
+    IconData icon,
+    Function functionn,
+  ) {
+    return Platform.isIOS
+        ? GestureDetector(
+            onTap: () => functionn,
+            child: Icon(icon),
+          )
+        : IconButton(
+            onPressed: () => functionn,
+            icon: Icon(icon),
+          );
   }
 }
